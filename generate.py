@@ -45,7 +45,7 @@ class LangFormatter(object):
 	def esacpe(self, s):
 		return s.replace('"', '\\"')
 
-	def convertTemplateFromJS(self, template):
+	def formattedTemplate(self, template, withDollarOne):
 		return template
 
 	@classmethod
@@ -90,9 +90,12 @@ class BooFormatter(LangFormatter):
 	def combineType(self, name, type_):
 		return '%s as %s' % (name, type_)
 
-	def convertTemplateFromJS(self, template):
+	def formattedTemplate(self, template, withDollarOne):
 		templateType = self.extractTemplateType(template)
-		return '[of %s]' % templateType
+		if withDollarOne:
+			return '[of ${1:%s}]' % templateType
+		else:
+			return '[of %s]' % templateType
 
 class CSFormatter(LangFormatter):
 	NAME = 'CS'
@@ -113,9 +116,12 @@ class CSFormatter(LangFormatter):
 	def combineType(self, name, type_):
 		return '%s %s' % (type_, name)
 
-	def convertTemplateFromJS(self, template):
+	def formattedTemplate(self, template, withDollarOne):
 		templateType = self.extractTemplateType(template)
-		return '<%s>' % templateType
+		if withDollarOne:
+			return '<${1:%s}>' % templateType
+		else:
+			return '<%s>' % templateType
 
 class JSFormatter(LangFormatter):
 	NAME = 'JavaScript'
@@ -124,6 +130,13 @@ class JSFormatter(LangFormatter):
 
 	def combineType(self, name, type_):
 		return '%s : %s' % (name, type_)
+
+	def formattedTemplate(self, template, withDollarOne):
+		templateType = self.extractTemplateType(template)
+		if withDollarOne:
+			return '.<${1:%s}>' % templateType
+		else:
+			return '.<%s>' % templateType
 
 FORMATTERS = [BooFormatter, CSFormatter, JSFormatter]
 
@@ -154,9 +167,11 @@ for sectionName, sectionClasses in data.iteritems():
 					logger.info('    ' + className + '.' + memberName + ' [' + paramNames + ']')
 					funcName = (className + '.' + memberName) if className != memberName else className
 					for lang in langs:
-						paramDefs = ', '.join(['${' + str(i+1) + ':' + lang['formatter'].formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
-						template = lang['formatter'].convertTemplateFromJS(funcDef['template']) if funcDef['template'] else ''
-						lang['file'].write(TRIGGER_LINE % (funcName + template + '(' + paramNames + ')', funcName + '(' + paramDefs + ')' + lang['formatter'].FUNCTION_POSTFIX))
+						template = lang['formatter'].formattedTemplate(funcDef['template'], False) if funcDef['template'] else ''
+						templateDollared = lang['formatter'].formattedTemplate(funcDef['template'], True) if funcDef['template'] else ''
+						countOffset = 1 if templateDollared else 0
+						paramDefs = ', '.join(['${' + str(i+1+countOffset) + ':' + lang['formatter'].formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
+						lang['file'].write(TRIGGER_LINE % (funcName + template + '(' + paramNames + ')', funcName + templateDollared + '(' + paramDefs + ')' + lang['formatter'].FUNCTION_POSTFIX))
 
 	for lang in langs:
 		lang['file'].write(SECTION_END_LINE)
