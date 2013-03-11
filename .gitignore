@@ -1,5 +1,8 @@
 *.py[cod]
 
+# output
+*.sublime-completions
+
 # C extensions
 *.so
 
