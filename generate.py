@@ -1,4 +1,5 @@
 import pickle
+import re
 
 INPUT_FILENAME = 'unity.pkl'
 
@@ -28,8 +29,12 @@ class LangFormatter(object):
 	NAME = None
 	SCOPE_NAME = None
 	FUNCTION_POSTFIX = None
+
 	def formattedParam(self, param):
-		return self.combineType(param['name'], param['type']) + self.default(param['default'])
+		return self.combineType(param['name'], self.convertTypeFromJS(param['type'])) + self.default(param['default'])
+
+	def convertTypeFromJS(self, type_):
+		return type_
 
 	def combineType(self, name, type_):
 		raise NotImplementedError
@@ -40,24 +45,83 @@ class LangFormatter(object):
 	def esacpe(self, s):
 		return s.replace('"', '\\"')
 
+	def convertTemplateFromJS(self, template):
+		return template
+
+	@classmethod
+	def splitArrayType(cls, type_):
+		m = re.search(r'^(.+)(\[.*\])$', type_)
+		if m:
+			return m.group(1), m.group(2)
+		else:
+			return type_, ''
+
+	@classmethod
+	def extractTemplateType(cls, template):
+		m = re.search(r'^\.<(.+)>$', template)
+		if not m:
+			raise Exception('invalid template: ' + template)
+		return m.group(1)
+
 class BooFormatter(LangFormatter):
 	NAME = 'Boo'
 	SCOPE_NAME = 'source.boo'
 	FUNCTION_POSTFIX = ''
+
+	TYPE_CONVERSION = {
+		'float': 'single',
+		'String': 'string',
+		'boolean': 'bool'
+	}
+
+	def convertTypeFromJS(self, type_):
+		scalar, dim = self.splitArrayType(type_)
+		if scalar in self.TYPE_CONVERSION:
+			scalar = self.TYPE_CONVERSION[scalar]
+		if dim:
+			rank = dim.count(',') + 1
+			if rank == 1:
+				return '(%s)' % scalar
+			else:
+				return '(%s, %u)' % (scalar, rank)
+		else:
+			return scalar
+
 	def combineType(self, name, type_):
 		return '%s as %s' % (name, type_)
+
+	def convertTemplateFromJS(self, template):
+		templateType = self.extractTemplateType(template)
+		return '[of %s]' % templateType
 
 class CSFormatter(LangFormatter):
 	NAME = 'CS'
 	SCOPE_NAME = 'source.cs'
 	FUNCTION_POSTFIX = ';'
+
+	TYPE_CONVERSION = {
+		'String': 'string',
+		'boolean': 'bool'
+	}
+
+	def convertTypeFromJS(self, type_):
+		scalar, dim = self.splitArrayType(type_)
+		if scalar in self.TYPE_CONVERSION:
+			scalar = self.TYPE_CONVERSION[scalar]
+		return scalar + dim
+	
 	def combineType(self, name, type_):
 		return '%s %s' % (type_, name)
+
+	def convertTemplateFromJS(self, template):
+		templateType = self.extractTemplateType(template)
+		return '<%s>' % templateType
 
 class JSFormatter(LangFormatter):
 	NAME = 'JavaScript'
 	SCOPE_NAME = 'source.js'
 	FUNCTION_POSTFIX = ';'
+
 	def combineType(self, name, type_):
 		return '%s : %s' % (name, type_)
 
@@ -68,9 +132,6 @@ langs = [{'name': formatter.NAME, 'formatter': formatter()} for formatter in FOR
 for lang in langs:
 	lang['file'] = open(OUTPUT_FILENAME % lang['name'], 'w')
 	lang['file'].write(FILE_HEADER % lang['formatter'].SCOPE_NAME)
-
-# booFile = open(BOO_FILENAME, 'w')
-# booFile.write(FILE_HEADER % 'source.boo')
 
 data = pickle.load(open(INPUT_FILENAME, 'rb'))
 
@@ -90,15 +151,12 @@ for sectionName, sectionClasses in data.iteritems():
 			else: # function
 				for funcDef in funcDefs:
 					paramNames = ', '.join([param['name'] for param in funcDef['params']])
-					# ${1:index as int}
-					# paramDefs = ', '.join(['${' + str(i+1) + ':' + (param['name'] + ' as ' + param['type'] + ((' = ' + param['default'].replace('"', '\\"')) if param['default'] else '') + '}') for i, param in enumerate(funcDef['params'])])
 					logger.info('    ' + className + '.' + memberName + ' [' + paramNames + ']')
 					funcName = (className + '.' + memberName) if className != memberName else className
-					# booFile.write(TRIGGER_LINE % (funcName + '(' + paramNames + ')', funcName + '(' + paramDefs + ')'))
 					for lang in langs:
 						paramDefs = ', '.join(['${' + str(i+1) + ':' + lang['formatter'].formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
-						lang['file'].write(TRIGGER_LINE % (funcName + '(' + paramNames + ')', funcName + '(' + paramDefs + ')' + lang['formatter'].FUNCTION_POSTFIX))
-
+						template = lang['formatter'].convertTemplateFromJS(funcDef['template']) if funcDef['template'] else ''
+						lang['file'].write(TRIGGER_LINE % (funcName + template + '(' + paramNames + ')', funcName + '(' + paramDefs + ')' + lang['formatter'].FUNCTION_POSTFIX))
 
 	for lang in langs:
 		lang['file'].write(SECTION_END_LINE)
