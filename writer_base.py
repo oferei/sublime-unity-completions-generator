@@ -1,5 +1,5 @@
 class WriterBase(object):
-	def __init__(self, name):
+	def __init__(self, outDir, name, scopeName):
 		raise NotImplementedError
 
 	def writeHeader(self):
@@ -20,5 +20,5 @@ class WriterBase(object):
 	def writeVariable(self, className, memberName):
 		raise NotImplementedError
 
-	def writeFunction(self, trigger, contents):
+	def writeFunction(self, funcName, template, paramNames, contents):
 		raise NotImplementedError

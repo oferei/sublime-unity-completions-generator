@@ -2,8 +2,11 @@ import pickle
 import re
 
 from writer_completions import WriterCompletions
+from writer_snippets import WriterSnippets
+ChosenWriter = WriterCompletions
 
 INPUT_FILENAME = 'unity.pkl'
+OUTPUT_DIR = 'out'
 
 import logging
 # create logger
@@ -24,7 +27,7 @@ class LangFormatter(object):
 	FUNCTION_POSTFIX = None
 
 	def __init__(self, writerClass):
-		self.writer = writerClass(self.NAME, self.SCOPE_NAME)
+		self.writer = writerClass(OUTPUT_DIR, self.NAME, self.SCOPE_NAME)
 
 	def terminate(self):
 		self.writer.terminate()
@@ -36,8 +39,8 @@ class LangFormatter(object):
 		self.writer.writeClass(className)
 	def writeVariable(self, className, memberName):
 		self.writer.writeVariable(className, memberName)
-	def writeFunction(self, trigger, contents):
-		self.writer.writeFunction(trigger, contents)
+	def writeFunction(self, funcName, template, paramNames, contents):
+		self.writer.writeFunction(funcName, template, paramNames, contents)
 
 	def formattedParam(self, param):
 		return self.combineType(param['name'], self.convertTypeFromJS(param['type'])) + self.default(param['default'])
@@ -149,7 +152,7 @@ class JSFormatter(LangFormatter):
 
 
 data = pickle.load(open(INPUT_FILENAME, 'rb'))
-formatters = [f(WriterCompletions) for f in (BooFormatter, CSFormatter, JSFormatter)]
+formatters = [f(ChosenWriter) for f in (BooFormatter, CSFormatter, JSFormatter)]
 
 for sectionName, sectionClasses in data.iteritems():
 	logger.info(sectionName)
@@ -174,7 +177,7 @@ for sectionName, sectionClasses in data.iteritems():
 						templateDollared = f.formattedTemplate(funcDef['template'], True) if funcDef['template'] else ''
 						countOffset = 1 if templateDollared else 0
 						paramDefs = ', '.join(['${' + str(i+1+countOffset) + ':' + f.formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
-						f.writeFunction(funcName + template + '(' + paramNames + ')', funcName + templateDollared + '(' + paramDefs + ')' + f.FUNCTION_POSTFIX)
+						f.writeFunction(funcName, template, paramNames, funcName + templateDollared + '(' + paramDefs + ')' + f.FUNCTION_POSTFIX)
 
 	for f in formatters:
 		f.endSection()

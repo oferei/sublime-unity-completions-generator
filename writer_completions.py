@@ -1,5 +1,7 @@
 from writer_base import WriterBase
 
+import os
+
 class WriterCompletions(WriterBase):
 	OUTPUT_FILENAME = 'Unity.%s.sublime-completions'
 
@@ -9,9 +11,11 @@ class WriterCompletions(WriterBase):
 	TRIGGER_LINE = "\t\t{ \"trigger\": \"%s\", \"contents\": \"%s\" },\n"
 	FILE_FOOTER = "\t\t{}\n\t]\n}\n"
 
-	def __init__(self, name, scopeName):
+	def __init__(self, outDir, name, scopeName):
 		self.name = name
-		self.file = open(self.OUTPUT_FILENAME % name, 'w')
+		if not os.path.isdir(outDir):
+			os.makedirs(outDir)
+		self.file = open(os.path.join(outDir, self.OUTPUT_FILENAME % name), 'w')
 		self.writeHeader(scopeName)
 
 	def terminate(self):
@@ -35,5 +39,6 @@ class WriterCompletions(WriterBase):
 	def writeVariable(self, className, memberName):
 		self.file.write(self.TRIGGER_LINE % (className + '.' + memberName, className + '.' + memberName))
 
-	def writeFunction(self, trigger, contents):
+	def writeFunction(self, funcName, template, paramNames, contents):
+		trigger = funcName + template + '(' + paramNames + ')'
 		self.file.write(self.TRIGGER_LINE % (trigger, contents))
