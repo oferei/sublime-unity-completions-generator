@@ -34,6 +34,9 @@ class LangFormatter(object):
 		self.file = open(OUTPUT_FILENAME % self.NAME, 'w')
 		self.writeHeader()
 
+	def terminate(self):
+		self.writeFooter()
+
 	def writeHeader(self):
 		self.file.write(FILE_HEADER % self.SCOPE_NAME)
 
@@ -183,7 +186,7 @@ for sectionName, sectionClasses in data.iteritems():
 			else: # function
 				for funcDef in funcDefs:
 					paramNames = ', '.join([param['name'] for param in funcDef['params']])
-					logger.info('    ' + className + '.' + memberName + ' [' + paramNames + ']')
+					logger.info('    ' + className + '.' + memberName + '(' + paramNames + ') [function]')
 					funcName = (className + '.' + memberName) if className != memberName else className
 					for f in formatters:
 						template = f.formattedTemplate(funcDef['template'], False) if funcDef['template'] else ''
@@ -196,4 +199,4 @@ for sectionName, sectionClasses in data.iteritems():
 		f.endSection()
 
 for f in formatters:
-	f.writeFooter()
+	f.terminate()
