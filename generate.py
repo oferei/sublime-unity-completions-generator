@@ -1,10 +1,9 @@
 import pickle
 import re
 
-INPUT_FILENAME = 'unity.pkl'
+from writer_completions import WriterCompletions
 
-OUTPUT_FILENAME = 'Unity.%s.sublime-completions'
-BOO_FILENAME = OUTPUT_FILENAME % 'Boo'
+INPUT_FILENAME = 'unity.pkl'
 
 import logging
 # create logger
@@ -19,44 +18,26 @@ ch.setFormatter(formatter)
 # add the handlers to the logger
 logger.addHandler(ch)
 
-FILE_HEADER = "{\n\t\"scope\": \"%s\",\n\n\t\"completions\":\n\t[\n"
-SECTION_START_LINE = "\t\t// %s\n"
-SECTION_END_LINE = "\n"
-TRIGGER_LINE = "\t\t{ \"trigger\": \"%s\", \"contents\": \"%s\" },\n"
-FILE_FOOTER = "\t\t{}\n\t]\n}\n"
-
 class LangFormatter(object):
 	NAME = None
 	SCOPE_NAME = None
 	FUNCTION_POSTFIX = None
 
-	def __init__(self):
-		self.file = open(OUTPUT_FILENAME % self.NAME, 'w')
-		self.writeHeader()
+	def __init__(self, writerClass):
+		self.writer = writerClass(self.NAME, self.SCOPE_NAME)
 
 	def terminate(self):
-		self.writeFooter()
-
-	def writeHeader(self):
-		self.file.write(FILE_HEADER % self.SCOPE_NAME)
-
-	def writeFooter(self):
-		self.file.write(FILE_FOOTER)
-
+		self.writer.terminate()
 	def startSection(self, sectionName):
-		self.file.write(SECTION_START_LINE % sectionName)
-
+		self.writer.startSection(sectionName)
 	def endSection(self):
-		self.file.write(SECTION_END_LINE)
-
+		self.writer.endSection()
 	def writeClass(self, className):
-		self.file.write(TRIGGER_LINE % (className, className))
-
+		self.writer.writeClass(className)
 	def writeVariable(self, className, memberName):
-		self.file.write(TRIGGER_LINE % (className + '.' + memberName, className + '.' + memberName))
-
+		self.writer.writeVariable(className, memberName)
 	def writeFunction(self, trigger, contents):
-		self.file.write(TRIGGER_LINE % (trigger, contents))
+		self.writer.writeFunction(trigger, contents)
 
 	def formattedParam(self, param):
 		return self.combineType(param['name'], self.convertTypeFromJS(param['type'])) + self.default(param['default'])
@@ -168,7 +149,7 @@ class JSFormatter(LangFormatter):
 
 
 data = pickle.load(open(INPUT_FILENAME, 'rb'))
-formatters = [f() for f in (BooFormatter, CSFormatter, JSFormatter)]
+formatters = [f(WriterCompletions) for f in (BooFormatter, CSFormatter, JSFormatter)]
 
 for sectionName, sectionClasses in data.iteritems():
 	logger.info(sectionName)
