@@ -30,6 +30,31 @@ class LangFormatter(object):
 	SCOPE_NAME = None
 	FUNCTION_POSTFIX = None
 
+	def __init__(self):
+		self.file = open(OUTPUT_FILENAME % self.NAME, 'w')
+		self.writeHeader()
+
+	def writeHeader(self):
+		self.file.write(FILE_HEADER % self.SCOPE_NAME)
+
+	def writeFooter(self):
+		self.file.write(FILE_FOOTER)
+
+	def startSection(self, sectionName):
+		self.file.write(SECTION_START_LINE % sectionName)
+
+	def endSection(self):
+		self.file.write(SECTION_END_LINE)
+
+	def writeClass(self, className):
+		self.file.write(TRIGGER_LINE % (className, className))
+
+	def writeVariable(self, className, memberName):
+		self.file.write(TRIGGER_LINE % (className + '.' + memberName, className + '.' + memberName))
+
+	def writeFunction(self, trigger, contents):
+		self.file.write(TRIGGER_LINE % (trigger, contents))
+
 	def formattedParam(self, param):
 		return self.combineType(param['name'], self.convertTypeFromJS(param['type'])) + self.default(param['default'])
 
@@ -138,43 +163,37 @@ class JSFormatter(LangFormatter):
 		else:
 			return '.<%s>' % templateType
 
-FORMATTERS = [BooFormatter, CSFormatter, JSFormatter]
-
-langs = [{'name': formatter.NAME, 'formatter': formatter()} for formatter in FORMATTERS]
-
-for lang in langs:
-	lang['file'] = open(OUTPUT_FILENAME % lang['name'], 'w')
-	lang['file'].write(FILE_HEADER % lang['formatter'].SCOPE_NAME)
 
 data = pickle.load(open(INPUT_FILENAME, 'rb'))
+formatters = [f() for f in (BooFormatter, CSFormatter, JSFormatter)]
 
 for sectionName, sectionClasses in data.iteritems():
 	logger.info(sectionName)
-	for lang in langs:
-		lang['file'].write(SECTION_START_LINE % sectionName)
+	for f in formatters:
+		f.startSection(sectionName)
 	for className, classMembers in sectionClasses.iteritems():
 		logger.info('    ' + className+ ' [class]')
-		for lang in langs:
-			lang['file'].write(TRIGGER_LINE % (className, className))
+		for f in formatters:
+			f.writeClass(className)
 		for memberName, funcDefs in classMembers.iteritems():
 			if funcDefs is None: # variable
 				logger.info('    ' + className + '.' + memberName + ' [variable]')
-				for lang in langs:
-					lang['file'].write(TRIGGER_LINE % (className + '.' + memberName, className + '.' + memberName))
+				for f in formatters:
+					f.writeVariable(className, memberName)
 			else: # function
 				for funcDef in funcDefs:
 					paramNames = ', '.join([param['name'] for param in funcDef['params']])
 					logger.info('    ' + className + '.' + memberName + ' [' + paramNames + ']')
 					funcName = (className + '.' + memberName) if className != memberName else className
-					for lang in langs:
-						template = lang['formatter'].formattedTemplate(funcDef['template'], False) if funcDef['template'] else ''
-						templateDollared = lang['formatter'].formattedTemplate(funcDef['template'], True) if funcDef['template'] else ''
+					for f in formatters:
+						template = f.formattedTemplate(funcDef['template'], False) if funcDef['template'] else ''
+						templateDollared = f.formattedTemplate(funcDef['template'], True) if funcDef['template'] else ''
 						countOffset = 1 if templateDollared else 0
-						paramDefs = ', '.join(['${' + str(i+1+countOffset) + ':' + lang['formatter'].formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
-						lang['file'].write(TRIGGER_LINE % (funcName + template + '(' + paramNames + ')', funcName + templateDollared + '(' + paramDefs + ')' + lang['formatter'].FUNCTION_POSTFIX))
+						paramDefs = ', '.join(['${' + str(i+1+countOffset) + ':' + f.formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
+						f.writeFunction(funcName + template + '(' + paramNames + ')', funcName + templateDollared + '(' + paramDefs + ')' + f.FUNCTION_POSTFIX)
 
-	for lang in langs:
-		lang['file'].write(SECTION_END_LINE)
+	for f in formatters:
+		f.endSection()
 
-for lang in langs:
-	lang['file'].write(FILE_FOOTER)
+for f in formatters:
+	f.writeFooter()
