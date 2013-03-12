@@ -17,6 +17,7 @@ class WriterSnippets(WriterBase):
 		self.outDir = os.path.join(outDir, self.name)
 		if not os.path.isdir(self.outDir):
 			os.makedirs(self.outDir)
+		self.sectionDir = self.outDir
 		self.shortFilenames = {}
 
 	def terminate(self):
@@ -29,10 +30,12 @@ class WriterSnippets(WriterBase):
 		pass
 
 	def startSection(self, sectionName):
-		pass
+		self.sectionDir = os.path.join(self.outDir, sectionName)
+		if not os.path.isdir(self.sectionDir):
+			os.makedirs(self.sectionDir)
 
 	def endSection(self):
-		pass
+		self.sectionDir = self.outDir
 
 	def writeClass(self, className):
 		self.writeSnipperFiles(filename=className,
@@ -75,7 +78,7 @@ class WriterSnippets(WriterBase):
 	def writeSnipperFile(self, filename, content, trigger, description):
 		filename = filename.replace('<', '[').replace('>', ']').replace(' ', '_')
 		filename = self.getShortFilename(filename)
-		file = open(os.path.join(self.outDir, '%s.sublime-snippet' % filename), 'w')
+		file = open(os.path.join(self.sectionDir, '%s.sublime-snippet' % filename), 'w')
 		file.write(self.SNIPPET_FILE_FORMAT % (content, trigger, self.scopeName, description))
 
 	MAX_FILENAME = 100

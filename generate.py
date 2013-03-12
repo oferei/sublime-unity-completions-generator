@@ -3,7 +3,7 @@ import re
 
 from writer_completions import WriterCompletions
 from writer_snippets import WriterSnippets
-ChosenWriter = WriterCompletions
+ChosenWriter = WriterSnippets
 
 INPUT_FILENAME = 'unity.pkl'
 OUTPUT_DIR = 'out'
