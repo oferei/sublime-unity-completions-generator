@@ -46,8 +46,8 @@ class WriterSnippets(WriterBase):
 	def writeVariable(self, className, memberName):
 		self.writeSnipperFiles(filename=className + '_' + memberName + '_class',
 								content=className + '.' + memberName,
-								trigger=className,
-								description='*.' + memberName)
+								trigger=className + '.' + memberName,
+								description='[var]')
 		self.writeSnipperFiles(filename=className + '_' + memberName + '_var',
 								content=className + '.' + memberName,
 								trigger=memberName,
@@ -58,8 +58,8 @@ class WriterSnippets(WriterBase):
 			className, memberName = funcName.split('.', 1)
 			self.writeSnipperFiles(filename=funcName + template + '(' + paramNames + ')_class',
 									content=contents,
-									trigger=className,
-									description='*.' + memberName + template + '(' + paramNames + ')')
+									trigger=className + '.' + memberName,
+									description='*' + template + '(' + paramNames + ')')
 			self.writeSnipperFiles(filename=funcName + template + '(' + paramNames + ')_func',
 									content=contents,
 									trigger=memberName,
