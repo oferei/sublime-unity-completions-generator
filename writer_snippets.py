@@ -47,7 +47,7 @@ class WriterSnippets(WriterBase):
 		self.writeSnipperFiles(filename=className + '_' + memberName + '_class',
 								content=className + '.' + memberName,
 								trigger=className + '.' + memberName,
-								description='[var]')
+								description='[property]')
 		self.writeSnipperFiles(filename=className + '_' + memberName + '_var',
 								content=className + '.' + memberName,
 								trigger=memberName,
