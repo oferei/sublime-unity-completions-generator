@@ -9,6 +9,8 @@ ChosenWriter = WriterSnippets
 INPUT_FILENAME = 'unity.pkl'
 OUTPUT_DIR = 'out'
 
+UNKNOWN_PARAM_NAME = '?'
+
 import logging
 # create logger
 logger = logging.getLogger('unity_gen_plugin_application')
@@ -44,7 +46,7 @@ class LangFormatter(object):
 		self.writer.writeFunction(funcName, template, paramNames, contents)
 
 	def formattedParam(self, param):
-		return self.combineType(param['name'], self.convertTypeFromJS(param['type'])) + self.default(param['default'])
+		return self.combineType(param['name'] or UNKNOWN_PARAM_NAME, self.convertTypeFromJS(param['type'])) + self.default(param['default'])
 
 	def convertTypeFromJS(self, type_):
 		return type_
@@ -170,7 +172,7 @@ for sectionName, sectionClasses in data.iteritems():
 					f.writeVariable(className, memberName)
 			else: # function
 				for funcDef in funcDefs:
-					paramNames = ', '.join([param['name'] for param in funcDef['params']])
+					paramNames = ', '.join([param['name'] or UNKNOWN_PARAM_NAME for param in funcDef['params']])
 					logger.info('    ' + className + '.' + memberName + '(' + paramNames + ') [function]')
 					funcName = (className + '.' + memberName) if className != memberName else className
 					for f in formatters:
