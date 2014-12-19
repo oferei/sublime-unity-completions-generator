@@ -4,6 +4,8 @@ import re
 
 from writer_completions import WriterCompletions
 from writer_snippets import WriterSnippets
+
+# choose WriterSnippets (full) or WriterCompletions (light)
 ChosenWriter = WriterSnippets
 
 INPUT_FILENAME = 'unity.pkl'
