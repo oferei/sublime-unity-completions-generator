@@ -6,7 +6,7 @@ from writer_completions import WriterCompletions
 from writer_snippets import WriterSnippets
 
 # choose WriterSnippets (full) or WriterCompletions (light)
-ChosenWriter = WriterSnippets
+ChosenWriter = WriterCompletions
 
 INPUT_FILENAME = 'unity.pkl'
 OUTPUT_DIR = 'out'
@@ -29,7 +29,6 @@ logger.addHandler(ch)
 class LangFormatter(object):
 	NAME = None
 	SCOPE_NAME = None
-	FUNCTION_POSTFIX = None
 
 	def __init__(self, writerClass):
 		self.writer = writerClass(OUTPUT_DIR, self.NAME, self.SCOPE_NAME)
@@ -83,7 +82,6 @@ class LangFormatter(object):
 class BooFormatter(LangFormatter):
 	NAME = 'Boo'
 	SCOPE_NAME = 'source.boo'
-	FUNCTION_POSTFIX = ''
 
 	TYPE_CONVERSION = {
 		'float': 'single',
@@ -117,7 +115,6 @@ class BooFormatter(LangFormatter):
 class CSFormatter(LangFormatter):
 	NAME = 'CS'
 	SCOPE_NAME = 'source.cs'
-	FUNCTION_POSTFIX = ';'
 
 	TYPE_CONVERSION = {
 		'String': 'string',
@@ -143,7 +140,6 @@ class CSFormatter(LangFormatter):
 class JSFormatter(LangFormatter):
 	NAME = 'JavaScript'
 	SCOPE_NAME = 'source.js'
-	FUNCTION_POSTFIX = ';'
 
 	def combineType(self, name, type_):
 		return '%s : %s' % (name, type_)
@@ -182,7 +178,7 @@ for sectionName, sectionClasses in data.iteritems():
 						templateDollared = f.formattedTemplate(funcDef['template'], True) if funcDef['template'] else ''
 						countOffset = 1 if templateDollared else 0
 						paramDefs = ', '.join(['${' + str(i+1+countOffset) + ':' + f.formattedParam(param) + '}' for i, param in enumerate(funcDef['params'])])
-						f.writeFunction(funcName, template, paramNames, funcName + templateDollared + '(' + paramDefs + ')' + f.FUNCTION_POSTFIX)
+						f.writeFunction(funcName, template, paramNames, funcName + templateDollared + '(' + paramDefs + ')')
 
 	for f in formatters:
 		f.endSection()
