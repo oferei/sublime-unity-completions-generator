@@ -155,15 +155,15 @@ class JSFormatter(LangFormatter):
 data = pickle.load(open(INPUT_FILENAME, 'rb'))
 formatters = [f(ChosenWriter) for f in (BooFormatter, CSFormatter, JSFormatter)]
 
-for sectionName, sectionClasses in data.iteritems():
+for sectionName, sectionClasses in sorted(data.iteritems()):
 	logger.info(sectionName)
 	for f in formatters:
 		f.startSection(sectionName)
-	for className, classMembers in sectionClasses.iteritems():
+	for className, classMembers in sorted(sectionClasses.iteritems()):
 		logger.info('    ' + className+ ' [class]')
 		for f in formatters:
 			f.writeClass(className)
-		for memberName, funcDefs in classMembers.iteritems():
+		for memberName, funcDefs in sorted(classMembers.iteritems()):
 			if funcDefs is None: # variable
 				logger.info('    ' + className + '.' + memberName + ' [variable]')
 				for f in formatters:
