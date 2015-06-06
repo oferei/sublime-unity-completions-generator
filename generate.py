@@ -11,7 +11,7 @@ ChosenWriter = WriterCompletions
 INPUT_FILENAME = 'unity.pkl'
 OUTPUT_DIR = 'out'
 
-UNKNOWN_PARAM_NAME = '?'
+UNKNOWN_PARAM_NAME = 'namelessParam'
 
 import logging
 # create logger
