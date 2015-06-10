@@ -74,7 +74,7 @@ class LangFormatter(object):
 
 	@classmethod
 	def extractTemplateType(cls, template):
-		m = re.search(r'^\.<(.+)>$', template)
+		m = re.search(r'^\.?<(.+)>$', template)
 		if not m:
 			raise Exception('invalid template: ' + template)
 		return m.group(1)
