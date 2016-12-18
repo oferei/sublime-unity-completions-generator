@@ -47,9 +47,10 @@ class LangFormatter(object):
 		self.writer.writeFunction(funcName, template, paramNames, contents)
 
 	def formattedParam(self, param):
-		return self.combineType(param['name'] or UNKNOWN_PARAM_NAME, self.convertTypeFromJS(param['type'])) + self.default(param['default'])
+		modifier, type_ = self.splitModifierFromType(param['type'])
+		return self.combineType(param['name'] or UNKNOWN_PARAM_NAME, modifier + self.convertTypeFromCS(type_)) + self.default(param['default'])
 
-	def convertTypeFromJS(self, type_):
+	def convertTypeFromCS(self, type_):
 		return type_
 
 	def combineType(self, name, type_):
@@ -63,6 +64,14 @@ class LangFormatter(object):
 
 	def formattedTemplate(self, template, withDollarOne):
 		return template
+
+	@classmethod
+	def splitModifierFromType(cls, type_):
+		m = re.search(r'^(\w+ )(.+)$', type_)
+		if m:
+			return m.group(1), m.group(2)
+		else:
+			return '', type_
 
 	@classmethod
 	def splitArrayType(cls, type_):
@@ -89,7 +98,7 @@ class BooFormatter(LangFormatter):
 		'boolean': 'bool'
 	}
 
-	def convertTypeFromJS(self, type_):
+	def convertTypeFromCS(self, type_):
 		scalar, dim = self.splitArrayType(type_)
 		if scalar in self.TYPE_CONVERSION:
 			scalar = self.TYPE_CONVERSION[scalar]
@@ -121,7 +130,7 @@ class CSFormatter(LangFormatter):
 		'boolean': 'bool'
 	}
 
-	def convertTypeFromJS(self, type_):
+	def convertTypeFromCS(self, type_):
 		scalar, dim = self.splitArrayType(type_)
 		if scalar in self.TYPE_CONVERSION:
 			scalar = self.TYPE_CONVERSION[scalar]
